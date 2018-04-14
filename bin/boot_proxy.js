@@ -156,10 +156,14 @@ if (USE_BOOT_PROXY) {
     } else {
       console.error("proxy ::: res.writeHead is not a function");
     }
-
+    
     console.error(err);
     console.error("proxy ::: error detected, closing response");
-    res.destroy();
+    if(isFunction(res.destroy)) {
+      res.destroy();
+    } else {
+      console.error("proxy ::: res.destroy is not a function")
+    }
   });
 
   proxyServer.listen(PORT);
