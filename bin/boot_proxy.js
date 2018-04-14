@@ -154,19 +154,15 @@ if (USE_BOOT_PROXY) {
         'Content-Type': 'text/plain'
       });
     } else {
-      console.error("proxy ::: res.writeHead is not a function")
+      console.error("proxy ::: res.writeHead is not a function");
     }
-    // from https://github.com/karma-runner/karma/blob/ae05ea496b8fff1a316387f0b5919de673c5e274/lib/middleware/proxy.js#L60
-    if (err.code === 'ECONNRESET' && req.socket.destroyed) {
-      res.destroy();
-      return;
-    }
-
+    
     console.error(err);
-    if(isFunction(res.end)) {
-      res.end('There was an error');
+    console.error("proxy ::: error detected, closing response");
+    if(isFunction(res.destroy)) {
+      res.destroy();
     } else {
-      console.error("proxy ::: res.end is not a function")
+      console.error("proxy ::: res.destroy is not a function");
     }
   });
 
