@@ -162,7 +162,7 @@ if (USE_BOOT_PROXY) {
     if(isFunction(res.destroy)) {
       res.destroy();
     } else {
-      console.error("proxy ::: res.destroy is not a function")
+      console.error("proxy ::: res.destroy is not a function");
     }
   });
 
