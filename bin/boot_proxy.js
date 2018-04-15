@@ -14,7 +14,6 @@ var PING_INTERVAL = parseInt(process.env.PING_PATH) || 1;
 var BOOT_TIMEOUT = parseInt(process.env.BOOT_TIMEOUT) || 60 * 60;
 var BOOTING_URL = process.env.BOOTING_URL;
 
-
 var ROOT_URL = process.env.ROOT_URL;
 var HEROKU_APP_NAME = process.env.HEROKU_APP_NAME;
 
@@ -25,6 +24,12 @@ if (ROOT_URL === undefined) {
     ROOT_URL = 'http://localhost';
   }
 }
+
+//From https://stackoverflow.com/questions/18657873/socket-io-server-hangs-up
+process.on('uncaughtException', function (err) {
+  // handle or ignore error
+  console.error('err uncaught Exception  : ', err);
+});
 
 function isFunction(functionToCheck) {
  return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
