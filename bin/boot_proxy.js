@@ -90,6 +90,7 @@ if (USE_BOOT_PROXY) {
     req.on('error', function (e) {
       // Silence is golden...
       // console.error(`problem with request: ${e.message}`);
+      console.error('req error: line 93');
     });
     req.end();
   }, 1000*PING_INTERVAL);
@@ -116,6 +117,7 @@ if (USE_BOOT_PROXY) {
         'Content-Type': 'text/plain'
       });
 
+      console.error('Booting proxy error');
       console.error(err);
       res.end('There was an error');
     });
@@ -137,7 +139,8 @@ if (USE_BOOT_PROXY) {
   proxyServer.on('upgrade', function (req, socket, head) {
     // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
     socket.on("error", function(err){
-      console.log(err);
+      console.error('Proxy server on upgrade error');
+      console.error(err);
     });
     if (booted) {
       proxy.ws(req, socket, head);
