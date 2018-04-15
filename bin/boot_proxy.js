@@ -117,7 +117,7 @@ if (USE_BOOT_PROXY) {
         'Content-Type': 'text/plain'
       });
 
-      console.error('Booting proxy error')
+      console.error('Booting proxy error');
       console.error(err);
       res.end('There was an error');
     });
