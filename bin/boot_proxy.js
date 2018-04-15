@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+var throng = require('throng');
 var spawn = require('child_process').spawn;
 var http = require('http');
 var httpProxy = require('http-proxy');
@@ -7,6 +8,7 @@ var httpProxy = require('http-proxy');
 
 var USE_BOOT_PROXY = (['1', 'true', 'yes', 1].indexOf((process.env.USE_BOOT_PROXY || '').toLowerCase()) !== -1);
 
+var WORKERS = process.env.WEB_CONCURRENCY || 1;
 var PORT = process.env.PORT || 3000;
 var SUBPROCESS_PORT = parseInt(process.env.SUBPROCESS_PORT) || 3030;
 var PING_PATH = process.env.PING_PATH || '/';
@@ -62,121 +64,126 @@ function start_subprocess() {
   return child;
 }
 
+throng({
+  workers: WORKERS,
+  lifetime: Infinity
+}, start);
+
+function start() {
+  start_subprocess();
+
+  if (USE_BOOT_PROXY) {
+    var booted = false;
+
+    var pinger = setInterval(function () {
+      var options = {
+        port: SUBPROCESS_PORT,
+        method: 'GET',
+        path: PING_PATH,
+        timeout: (1000*PING_INTERVAL) / 2,
+      };
+
+      var req = http.request(options, function (res) {
+        if (res.statusCode !== 200) {
+          return;
+        } else {
+          console.log('Application booted');
+          clearInterval(pinger);
+          booted = true;
+        }
+      });
+
+      req.on('error', function (e) {
+        // Silence is golden...
+        // console.error(`problem with request: ${e.message}`);
+      });
+      req.end();
+    }, 1000*PING_INTERVAL);
 
 
-start_subprocess();
 
-if (USE_BOOT_PROXY) {
-  var booted = false;
-
-  var pinger = setInterval(function () {
-    var options = {
-      port: SUBPROCESS_PORT,
-      method: 'GET',
-      path: PING_PATH,
-      timeout: (1000*PING_INTERVAL) / 2,
-    };
-
-    var req = http.request(options, function (res) {
-      if (res.statusCode !== 200) {
-        return;
-      } else {
-        console.log('Application booted');
-        clearInterval(pinger);
-        booted = true;
-      }
-    });
-
-    req.on('error', function (e) {
-      // Silence is golden...
-      // console.error(`problem with request: ${e.message}`);
-    });
-    req.end();
-  }, 1000*PING_INTERVAL);
-
-
-
-  var bootingProxy;
-  var proxy = new httpProxy.createProxyServer({
-    target: {
-      port: SUBPROCESS_PORT,
-    },
-    ws: true,
-  });
-
-  if (BOOTING_URL) {
-    bootingProxy = new httpProxy.createProxyServer({
-      target: BOOTING_URL,
-      changeOrigin: true,
+    var bootingProxy;
+    var proxy = new httpProxy.createProxyServer({
+      target: {
+        port: SUBPROCESS_PORT,
+      },
       ws: true,
     });
 
-    bootingProxy.on('error', function (err, req, res) {
-      res.writeHead(500, {
-        'Content-Type': 'text/plain'
+    if (BOOTING_URL) {
+      bootingProxy = new httpProxy.createProxyServer({
+        target: BOOTING_URL,
+        changeOrigin: true,
+        ws: true,
       });
+
+      bootingProxy.on('error', function (err, req, res) {
+        res.writeHead(500, {
+          'Content-Type': 'text/plain'
+        });
+
+        console.error(err);
+        res.end('There was an error');
+      });
+    }
+
+    var proxyServer = http.createServer(function (req, res) {
+      if (booted) {
+        proxy.web(req, res);
+      } else {
+        if (bootingProxy) {
+          bootingProxy.web(req, res);
+        } else {
+          res.writeHead(200, { 'Content-Type': 'text/plain' });
+          res.end('Waiting for app to boot...');
+        }
+      }
+    });
+
+    proxyServer.on('upgrade', function (req, socket, head) {
+      // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
+      socket.on("error", function(err){
+        console.log(err);
+      });
+      if (booted) {
+        proxy.ws(req, socket, head);
+      } else {
+        if (bootingProxy) {
+          bootingProxy.ws(req, socket, head);
+        }
+      }
+    });
+
+    proxy.on('error', function (err, req, res) {
+      if(isFunction(res.writeHead)) {
+        res.writeHead(500, {
+          'Content-Type': 'text/plain'
+        });
+      } else {
+        console.error("proxy ::: res.writeHead is not a function");
+      }
 
       console.error(err);
-      res.end('There was an error');
+      console.error("proxy ::: error detected, closing response");
+      if(isFunction(res.destroy)) {
+        res.destroy();
+      } else {
+        console.error("proxy ::: res.destroy is not a function");
+      }
     });
+
+    proxyServer.listen(PORT);
+
+    setTimeout(function () {
+      if (!booted) {
+        console.error('Application not booted after ' + BOOT_TIMEOUT + ' seconds. Quitting...');
+        child.kill();
+        process.exit(64);
+      }
+    }, BOOT_TIMEOUT*1000);
   }
 
-  var proxyServer = http.createServer(function (req, res) {
-    if (booted) {
-      proxy.web(req, res);
-    } else {
-      if (bootingProxy) {
-        bootingProxy.web(req, res);
-      } else {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
-        res.end('Waiting for app to boot...');
-      }
-    }
-  });
 
-  proxyServer.on('upgrade', function (req, socket, head) {
-    // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
-    socket.on("error", function(err){
-      console.log(err);
-    });
-    if (booted) {
-      proxy.ws(req, socket, head);
-    } else {
-      if (bootingProxy) {
-        bootingProxy.ws(req, socket, head);
-      }
-    }
-  });
-
-  proxy.on('error', function (err, req, res) {
-    if(isFunction(res.writeHead)) {
-      res.writeHead(500, {
-        'Content-Type': 'text/plain'
-      });
-    } else {
-      console.error("proxy ::: res.writeHead is not a function");
-    }
-    
-    console.error(err);
-    console.error("proxy ::: error detected, closing response");
-    if(isFunction(res.destroy)) {
-      res.destroy();
-    } else {
-      console.error("proxy ::: res.destroy is not a function");
-    }
-  });
-
-  proxyServer.listen(PORT);
-
-  setTimeout(function () {
-    if (!booted) {
-      console.error('Application not booted after ' + BOOT_TIMEOUT + ' seconds. Quitting...');
-      child.kill();
-      process.exit(64);
-    }
-  }, BOOT_TIMEOUT*1000);
+  // Dummy interval to keep main loop busy so we don't exit early.
+  setInterval(function () { }, 1000)
 }
-
-
-// Dummy interval to keep main loop busy so we don't exit early.
-setInterval(function () { }, 1000)
