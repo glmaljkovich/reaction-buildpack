@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const throng = require('throng');
+var throng = require('throng');
 var spawn = require('child_process').spawn;
 var http = require('http');
 var httpProxy = require('http-proxy');
