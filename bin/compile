@@ -194,6 +194,7 @@ fi
 #
 
 $METEOR_NPM install --save http-proxy
+# Throng for concurrency
 $METEOR_NPM install --save throng
 cp "$BUILDPACK_DIR/bin/boot_proxy.js" "$COMPILE_DIR/bin"
 
