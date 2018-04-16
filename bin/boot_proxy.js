@@ -14,7 +14,7 @@ var BOOTING_URL = process.env.BOOTING_URL;
 var ROOT_URL = process.env.ROOT_URL;
 var HEROKU_APP_NAME = process.env.HEROKU_APP_NAME;
 
-var PROXY_TIMEOUT = 31
+var PROXY_TIMEOUT = 31;
 
 if (ROOT_URL === undefined) {
   if (HEROKU_APP_NAME) {
@@ -107,7 +107,7 @@ if (USE_BOOT_PROXY) {
       port: SUBPROCESS_PORT,
     },
     ws: true,
-    proxyTimeout: 1000*PROXY_TIMEOUT
+    proxyTimeout: 1000*PROXY_TIMEOUT,
   });
 
   if (BOOTING_URL) {
