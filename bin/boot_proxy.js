@@ -24,12 +24,6 @@ if (ROOT_URL === undefined) {
   }
 }
 
-//From https://stackoverflow.com/questions/18657873/socket-io-server-hangs-up
-process.on('uncaughtException', function (err) {
-  // handle or ignore error
-  console.error('err uncaught Exception  : ', err);
-});
-
 function isFunction(functionToCheck) {
  return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 }
@@ -166,10 +160,10 @@ if (USE_BOOT_PROXY) {
     
     console.error(err);
     console.error("proxy ::: error detected, closing response");
-    if(isFunction(res.destroy)) {
-      res.destroy();
+    if(isFunction(res.end)) {
+      res.end('proxy ::: Error detected and ended');
     } else {
-      console.error("proxy ::: res.destroy is not a function");
+      console.error("proxy ::: res.end is not a function");
     }
   });
 
