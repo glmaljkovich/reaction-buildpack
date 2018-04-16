@@ -94,7 +94,6 @@ if (USE_BOOT_PROXY) {
     req.on('error', function (e) {
       // Silence is golden...
       // console.error(`problem with request: ${e.message}`);
-      console.error('req error: line 93');
     });
     req.end();
   }, 1000*PING_INTERVAL);
