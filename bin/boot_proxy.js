@@ -4,18 +4,17 @@ var spawn = require('child_process').spawn;
 var http = require('http');
 var httpProxy = require('http-proxy');
 
-
 var USE_BOOT_PROXY = (['1', 'true', 'yes', 1].indexOf((process.env.USE_BOOT_PROXY || '').toLowerCase()) !== -1);
-
 var PORT = process.env.PORT || 3000;
 var SUBPROCESS_PORT = parseInt(process.env.SUBPROCESS_PORT) || 3030;
 var PING_PATH = process.env.PING_PATH || '/';
 var PING_INTERVAL = parseInt(process.env.PING_PATH) || 1;
 var BOOT_TIMEOUT = parseInt(process.env.BOOT_TIMEOUT) || 60 * 60;
 var BOOTING_URL = process.env.BOOTING_URL;
-
 var ROOT_URL = process.env.ROOT_URL;
 var HEROKU_APP_NAME = process.env.HEROKU_APP_NAME;
+
+var PROXY_TIMEOUT = 31;
 
 if (ROOT_URL === undefined) {
   if (HEROKU_APP_NAME) {
@@ -95,7 +94,6 @@ if (USE_BOOT_PROXY) {
     req.on('error', function (e) {
       // Silence is golden...
       // console.error(`problem with request: ${e.message}`);
-      console.error('req error: line 93');
     });
     req.end();
   }, 1000*PING_INTERVAL);
@@ -108,6 +106,7 @@ if (USE_BOOT_PROXY) {
       port: SUBPROCESS_PORT,
     },
     ws: true,
+    proxyTimeout: 1000*PROXY_TIMEOUT,
   });
 
   if (BOOTING_URL) {
