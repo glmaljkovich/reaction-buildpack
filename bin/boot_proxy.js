@@ -137,8 +137,9 @@ if (USE_BOOT_PROXY) {
   proxyServer.on('upgrade', function (req, socket, head) {
     // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
     socket.on("error", function(err){
-      console.error('Proxy server on upgrade error');
+      console.error('Proxy server on upgrade error, closing socket');
       console.error(err);
+      socket.close();
     });
     if (booted) {
       proxy.ws(req, socket, head);
