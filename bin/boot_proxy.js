@@ -117,7 +117,11 @@ if (USE_BOOT_PROXY) {
 
       console.error('Booting proxy error');
       console.error(err);
-      res.end('There was an error');
+      if(isFunction(res.end)) {
+      res.end('bootingproxy ::: Error detected and ended');
+    } else {
+      console.error("bootingproxy ::: res.end is not a function");
+    }
     });
   }
 
@@ -142,7 +146,8 @@ if (USE_BOOT_PROXY) {
       // and handle it by your self
       console.error('Proxy server on upgrade error, in boot_proxy ln 143, closing socket');
       console.error(err);
-      socket.close();
+    }
+     
     });
     } else {
       if (bootingProxy) {
