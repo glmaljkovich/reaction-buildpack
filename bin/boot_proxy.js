@@ -142,7 +142,6 @@ if (USE_BOOT_PROXY) {
       // and handle it by your self
       console.error('Proxy server on upgrade error, in boot_proxy ln 143, closing socket');
       console.error(err);
-      socket.close();
     });
     } else {
       if (bootingProxy) {
