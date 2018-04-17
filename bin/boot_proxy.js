@@ -146,7 +146,12 @@ if (USE_BOOT_PROXY) {
     });
     } else {
       if (bootingProxy) {
-        bootingProxy.ws(req, socket, head);
+        bootingProxy.ws(req, socket, head, function (err) {
+      // Now you can get the err
+      // and handle it by your self
+      console.error('Booting proxy server on upgrade error, in boot_proxy ln 152');
+      console.error(err);
+    });
       }
     }
   });
