@@ -135,14 +135,15 @@ if (USE_BOOT_PROXY) {
   });
 
   proxyServer.on('upgrade', function (req, socket, head) {
-    // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
-    socket.on("error", function(err){
-      console.error('Proxy server on upgrade error, closing socket');
+    if (booted) {
+      // https://github.com/nodejitsu/node-http-proxy/blob/master/examples/http/error-handling.js
+      proxy.ws(req, socket, head, function (err) {
+      // Now you can get the err
+      // and handle it by your self
+      console.error('Proxy server on upgrade error, in boot_proxy ln 143, closing socket');
       console.error(err);
       socket.close();
     });
-    if (booted) {
-      proxy.ws(req, socket, head);
     } else {
       if (bootingProxy) {
         bootingProxy.ws(req, socket, head);
