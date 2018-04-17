@@ -24,12 +24,6 @@ if (ROOT_URL === undefined) {
   }
 }
 
-//From https://stackoverflow.com/questions/18657873/socket-io-server-hangs-up
-process.on('uncaughtException', function (err) {
-  // handle or ignore error
-  console.error('err uncaught Exception  : ', err);
-});
-
 function isFunction(functionToCheck) {
  return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
 }
@@ -141,16 +135,23 @@ if (USE_BOOT_PROXY) {
   });
 
   proxyServer.on('upgrade', function (req, socket, head) {
-    // from https://github.com/websockets/ws/issues/1256#issuecomment-364988689
-    socket.on("error", function(err){
-      console.error('Proxy server on upgrade error');
-      console.error(err);
-    });
     if (booted) {
-      proxy.ws(req, socket, head);
+      // https://github.com/nodejitsu/node-http-proxy/blob/master/examples/http/error-handling.js
+      proxy.ws(req, socket, head, function (err) {
+      // Now you can get the err
+      // and handle it by your self
+      console.error('Proxy server on upgrade error, in boot_proxy ln 143, closing socket');
+      console.error(err);
+      socket.close();
+    });
     } else {
       if (bootingProxy) {
-        bootingProxy.ws(req, socket, head);
+        bootingProxy.ws(req, socket, head, function (err) {
+      // Now you can get the err
+      // and handle it by your self
+      console.error('Booting proxy server on upgrade error, in boot_proxy ln 152');
+      console.error(err);
+    });
       }
     }
   });
@@ -166,10 +167,10 @@ if (USE_BOOT_PROXY) {
     
     console.error(err);
     console.error("proxy ::: error detected, closing response");
-    if(isFunction(res.destroy)) {
-      res.destroy();
+    if(isFunction(res.end)) {
+      res.end('proxy ::: Error detected and ended');
     } else {
-      console.error("proxy ::: res.destroy is not a function");
+      console.error("proxy ::: res.end is not a function");
     }
   });
 
