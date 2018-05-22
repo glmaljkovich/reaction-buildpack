@@ -128,7 +128,7 @@ if (USE_BOOT_PROXY) {
       if (bootingProxy) {
         bootingProxy.web(req, res);
       } else {
-        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.writeHead(504, { 'Content-Type': 'text/plain' });
         res.end('Waiting for app to boot...');
       }
     }
